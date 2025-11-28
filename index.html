@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ACE Premium Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #ff5fa2;
+    --primary-dark: #e0468a;
+    --bg-gradient: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+    --glass: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.6);
+    --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    --text-dark: #2d2d2d;
+    --text-light: #666;
+    --warning: #ffad33;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
+  body {
+    margin: 0;
+    font-family: 'Outfit', sans-serif;
+    background-image: var(--bg-gradient);
+    min-height: 100vh;
+    color: var(--text-dark);
+    padding-bottom: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* --- HEADER & DASHBOARD --- */
+  .header {
+    width: 100%;
+    padding: 20px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .welcome-text h1 { margin: 0; font-size: 24px; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+  .welcome-text p { margin: 0; font-size: 14px; color: rgba(255,255,255,0.9); }
+
+  .dashboard {
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    width: 90%;
+    max-width: 500px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+  }
+
+  .progress-ring { position: relative; width: 80px; height: 80px; }
+  .progress-ring svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+  .progress-ring circle { fill: transparent; stroke-width: 8; stroke-linecap: round; }
+  .bg-ring { stroke: #ffe0eb; }
+  .val-ring { stroke: var(--primary); stroke-dasharray: 220; stroke-dashoffset: 220; transition: stroke-dashoffset 0.5s ease; }
+  .ring-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 700; color: var(--primary); }
+
+  .dash-info { flex: 1; margin-left: 20px; }
+  .dash-info h3 { margin: 0 0 5px 0; font-size: 16px; }
+  .dash-info p { margin: 0; font-size: 13px; color: var(--text-light); }
+
+  /* --- ALERTS --- */
+  .alert-banner {
+    background: #fff4e5; border-left: 5px solid var(--warning);
+    color: #d68100;
+    width: 90%; max-width: 500px;
+    padding: 12px 15px; border-radius: 12px;
+    font-size: 13px; font-weight: 600;
+    margin-bottom: 15px; display: none;
+    align-items: center; gap: 10px;
+  }
+  
+  /* --- MEDICINE LIST --- */
+  .med-container { width: 90%; max-width: 500px; }
+  
+  .med-card {
+    background: white; border-radius: 20px;
+    padding: 20px; margin-bottom: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    position: relative;
+  }
+  
+  .med-header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .med-name { font-size: 18px; font-weight: 700; color: var(--text-dark); }
+  .med-dose { font-size: 13px; color: var(--text-light); margin-top: 4px; display: block; }
+  
+  .action-row { display: flex; gap: 10px; }
+  .icon-btn {
+    background: #f0f0f0; border: none; width: 32px; height: 32px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 14px; transition: 0.2s;
+  }
+  .icon-btn:hover { background: #e0e0e0; }
+  .delete-btn { color: #ff6b6b; background: #fff0f0; }
+  .edit-btn { color: #555; }
+
+  /* Time Chips */
+  .schedule-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
+  
+  .time-chip {
+    font-size: 12px; background: #f4f4f4;
+    padding: 8px 14px; border-radius: 12px;
+    cursor: pointer; transition: all 0.2s ease;
+    border: 1px solid transparent; user-select: none;
+  }
+  .time-chip.taken {
+    background: var(--primary); color: white;
+    box-shadow: 0 4px 10px rgba(255, 95, 162, 0.4);
+  }
+  .time-chip:active { transform: scale(0.95); }
+
+  /* --- FLOATING ADD BUTTON --- */
+  .fab {
+    position: fixed; bottom: 25px; right: 25px;
+    background: var(--primary); color: white;
+    width: 60px; height: 60px; border-radius: 50%;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 30px; box-shadow: 0 10px 25px rgba(255, 95, 162, 0.5);
+    border: none; cursor: pointer; z-index: 100;
+    transition: transform 0.2s;
+  }
+  .fab:hover { transform: scale(1.1); }
+
+  /* --- MODAL --- */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+    display: none; justify-content: center; align-items: center; z-index: 200;
+  }
+  .modal-card {
+    background: white; width: 85%; max-width: 400px;
+    border-radius: 25px; padding: 30px;
+    animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  
+  .modal-card h2 { margin-top: 0; color: var(--primary); }
+  
+  .input-group { margin-bottom: 15px; }
+  .input-group label { display: block; font-size: 12px; font-weight: 700; color: #888; margin-bottom: 5px; }
+  .input-group input, .input-group select {
+    width: 100%; padding: 12px;
+    border: 2px solid #eee; border-radius: 12px;
+    font-size: 16px; outline: none; font-family: 'Outfit', sans-serif;
+  }
+  .input-group input:focus { border-color: var(--primary); }
+  
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .btn-primary { flex: 1; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+  .btn-secondary { flex: 1; background: #eee; color: #555; border: none; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+
+  /* Notification Bell */
+  .bell { position: relative; cursor: pointer; }
+  .bell-badge { 
+    position: absolute; top: -5px; right: -5px; width: 10px; height: 10px; 
+    background: red; border-radius: 50%; display: none; 
+  }
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ace-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,0.8);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+.med-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.med-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+.time-chip {
+  font-size: 12px;
+  background: #f9f9f9;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  border: 1px solid #f0f0f0;
+}
+
+.time-chip.taken {
+  background: var(--primary);
+  border-color: var(--primary-dark);
+}
+
+
+</style>
+</head>
+<body>
+
+  <div class="header">
+  <div class="header-left">
+    <img src="mydog.jpg" alt="Ace" class="ace-avatar">
+    <div class="welcome-text">
+      <h1>Hello, ACE! 🐶</h1>
+      <p>Stay healthy & happy</p>
+    </div>
+  </div>
+  <div class="bell" onclick="requestNotificationPermission()">
+    🔔
+  </div>
+</div>
+
+
+  <div class="dashboard">
+    <div class="progress-ring">
+      <svg>
+        <circle class="bg-ring" cx="40" cy="40" r="35"></circle>
+        <circle class="val-ring" id="progressRing" cx="40" cy="40" r="35"></circle>
+      </svg>
+      <div class="ring-text" id="progressText">0%</div>
+    </div>
+    <div class="dash-info">
+      <h3 id="progressTitle">Good Morning!</h3>
+      <p id="progressSubtitle">Loading schedule...</p>
+    </div>
+  </div>
+
+  <div class="alert-banner" id="conflictBanner">
+    <span>⚠</span>
+    <span id="conflictText">Many meds at 08:00! Consider staggering.</span>
+  </div>
+
+  <div class="med-container" id="medList"></div>
+
+  <button class="fab" onclick="openAddModal()">＋</button>
+
+  <div class="modal-overlay" id="addModal">
+    <div class="modal-card">
+      <h2>Add Medicine</h2>
+      
+      <div class="input-group">
+        <label>MEDICINE NAME</label>
+        <input id="mName" type="text" placeholder="e.g. Vitamins">
+      </div>
+      
+      <div class="input-group">
+        <label>DOSAGE</label>
+        <input id="mDose" type="text" placeholder="e.g. 5ml">
+      </div>
+      
+      <div style="display:flex; gap:10px;">
+        <div class="input-group" style="flex:1">
+            <label>FREQUENCY</label>
+            <input id="mFreq" type="number" placeholder="3" min="1" max="6">
+        </div>
+        <div class="input-group" style="flex:1">
+            <label>FIRST DOSE TIME</label>
+            <input id="mStart" type="time" value="08:00">
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal('addModal')">Cancel</button>
+        <button class="btn-primary" onclick="saveMed()">Save Med</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="editTimeModal">
+    <div class="modal-card">
+      <h2>Adjust Schedule</h2>
+      <p style="font-size:12px; color:#666; margin-bottom:20px;">
+        Change times to prevent giving too many meds at once.
+      </p>
+      
+      <div id="timeEditContainer">
+        </div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal('editTimeModal')">Cancel</button>
+        <button class="btn-primary" onclick="saveNewTimes()">Update</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ---------------- STATE & CONFIG ---------------- */
+const STORAGE_KEY = 'ace_meds_premium_v2';
+const LAST_DAY_KEY = 'ace_last_day_v2';
+let currentEditId = null; // Track which med is being edited
+
+/* ---------------- CORE FUNCTIONS ---------------- */
+
+function safeParse(json, fallback) {
+  // If nothing stored yet, use the fallback
+  if (json === null || json === undefined || json === '') {
+    return fallback;
+  }
+  try {
+    return JSON.parse(json);
+  } catch (e) {
+    console.warn('Corrupted meds data, resetting:', e);
+    return fallback;
+  }
+}
+
+function loadMeds() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  const parsed = safeParse(raw, []);
+  const meds = Array.isArray(parsed) ? parsed : [];
+
+  // Normalize structure so old / partial data won't break things
+  return meds.map(m => {
+    const safeSchedule = Array.isArray(m.schedule)
+      ? m.schedule.map(s => ({
+          time: s.time || '08:00',
+          taken: !!s.taken
+        }))
+      : [];
+
+    return {
+      id: m.id || Date.now() + Math.random(),   // fallback id
+      name: m.name || '',
+      dose: m.dose || '',
+      freq: Number(m.freq) || safeSchedule.length || 1,
+      schedule: safeSchedule
+    };
+  });
+}
+
+
+function saveMeds(list) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  // don't *force* render here if you call saveMeds inside render-sensitive places
+  render();
+}
+// Generate times starting from a specific hour
+function generateSmartSchedule(freq, startTimeStr) {
+  let [startH, startM] = startTimeStr.split(':').map(Number);
+  let times = [];
+  
+  // Calculate interval (e.g., 3x day = every 8 hours roughly, but limited to waking hours usually)
+  // For simplicity and safety: 
+  // 1x = Start Time
+  // 2x = Start Time + 10 hours
+  // 3x = Start Time + 6h + 6h
+  // 4x = Start Time + 4h + 4h + 4h
+  
+  let interval = 0;
+  if(freq === 2) interval = 10; 
+  if(freq === 3) interval = 6; 
+  if(freq >= 4) interval = 4;
+
+  for(let i=0; i<freq; i++) {
+    let h = startH + (i * interval);
+    let m = startM;
+    
+    // Handle midnight wrapping (simple version: just let it go past 24 for sorting, clean up for display)
+    if(h >= 24) h -= 24;
+    
+    let timeStr = `${h < 10 ? '0'+h : h}:${m < 10 ? '0'+m : m}`;
+    times.push(timeStr);
+  }
+  return times;
+}
+
+function checkDailyReset() {
+  const today = new Date().toISOString().split('T')[0];
+  const lastDay = localStorage.getItem(LAST_DAY_KEY);
+
+  if (lastDay === today) return;
+
+  const meds = loadMeds().map(m => ({
+    ...m,
+    schedule: (m.schedule || []).map(s => ({
+      ...s,
+      taken: false   // just reset taken, keep times
+    }))
+  }));
+
+  saveMeds(meds);
+  localStorage.setItem(LAST_DAY_KEY, today);
+}
+
+/* ---------------- UI ACTIONS ---------------- */
+
+function openAddModal() {
+  document.getElementById('addModal').style.display = 'flex';
+  document.getElementById('mName').focus();
+}
+
+function closeModal(modalId) {
+  document.getElementById(modalId).style.display = 'none';
+}
+
+function saveMed() {
+  const name = document.getElementById('mName').value.trim();
+  const dose = document.getElementById('mDose').value.trim();
+  const freq = parseInt(document.getElementById('mFreq').value.trim());
+  const start = document.getElementById('mStart').value;
+
+  if (!name || !dose || !freq) return alert("Please fill all fields");
+
+  const meds = loadMeds();
+  const times = generateSmartSchedule(freq, start);
+  const scheduleObj = times.map(t => ({ time: t, taken: false }));
+
+  meds.push({
+    id: Date.now(),
+    name, dose, freq,
+    schedule: scheduleObj
+  });
+
+  saveMeds(meds);
+  closeModal('addModal');
+  
+  // Clear inputs
+  document.getElementById('mName').value = '';
+  document.getElementById('mDose').value = '';
+  document.getElementById('mFreq').value = '';
+}
+
+function deleteMed(id) {
+  if(!confirm("Remove this medicine?")) return;
+  const meds = loadMeds().filter(m => m.id !== id);
+  saveMeds(meds);
+}
+
+// Open the Edit Time Modal
+function openEditTimes(id) {
+  const meds = loadMeds();
+  const med = meds.find(m => m.id === id);
+  if(!med) return;
+
+  currentEditId = id;
+  const container = document.getElementById('timeEditContainer');
+  container.innerHTML = '';
+
+  med.schedule.forEach((slot, index) => {
+    container.innerHTML += `
+      <div class="input-group">
+        <label>DOSE ${index + 1}</label>
+        <input type="time" class="time-edit-input" value="${slot.time}">
+      </div>
+    `;
+  });
+
+  document.getElementById('editTimeModal').style.display = 'flex';
+}
+
+// Save the manually edited times
+function saveNewTimes() {
+  const inputs = document.querySelectorAll('.time-edit-input');
+  const newTimes = Array.from(inputs).map(inp => inp.value);
+  
+  const meds = loadMeds();
+  const med = meds.find(m => m.id === currentEditId);
+  
+  if (med) {
+    // Preserve taken status, just update time string
+    med.schedule = med.schedule.map((slot, i) => ({
+        time: newTimes[i] || slot.time,
+        taken: slot.taken
+    }));
+    // sort schedule by time
+    med.schedule.sort((a,b) => a.time.localeCompare(b.time));
+    saveMeds(meds);
+  }
+  closeModal('editTimeModal');
+}
+
+function toggleDose(medId, timeIndex) {
+  const meds = loadMeds();
+  const med = meds.find(m => m.id === medId);
+  if (med) {
+    med.schedule[timeIndex].taken = !med.schedule[timeIndex].taken;
+    saveMeds(meds);
+  }
+}
+
+/* ---------------- RENDER ENGINE ---------------- */
+
+function checkConflicts(meds) {
+    const timeCounts = {};
+    meds.forEach(m => {
+        m.schedule.forEach(s => {
+            if(!timeCounts[s.time]) timeCounts[s.time] = 0;
+            timeCounts[s.time]++;
+        });
+    });
+
+    // Check if any time has > 2 meds
+    const banner = document.getElementById('conflictBanner');
+    const text = document.getElementById('conflictText');
+    let conflictFound = false;
+
+    for (const [time, count] of Object.entries(timeCounts)) {
+        if (count > 2) {
+            banner.style.display = 'flex';
+            text.innerText = `Warning: ${count} meds scheduled at ${time}. Click ✎ to space them out.`;
+            conflictFound = true;
+            break;
+        }
+    }
+    if(!conflictFound) banner.style.display = 'none';
+}
+
+function render() {
+  const meds = loadMeds();
+  checkConflicts(meds); // Run conflict check
+
+  const list = document.getElementById('medList');
+  list.innerHTML = '';
+
+  let totalDoses = 0;
+  let takenDoses = 0;
+
+  meds.forEach(med => {
+    // Calculate stats
+    med.schedule.forEach(s => {
+      totalDoses++;
+      if (s.taken) takenDoses++;
+    });
+
+    const card = document.createElement('div');
+    card.className = 'med-card';
+    
+    let chipsHtml = `<div class="schedule-row">`;
+    med.schedule.forEach((slot, index) => {
+      chipsHtml += `
+        <div class="time-chip ${slot.taken ? 'taken' : ''}" 
+             onclick="toggleDose(${med.id}, ${index})">
+          ${slot.time} ${slot.taken ? '✓' : ''}
+        </div>
+      `;
+    });
+    chipsHtml += `</div>`;
+
+    card.innerHTML = `
+      <div class="med-header">
+        <div>
+          <div class="med-name">${med.name}</div>
+          <span class="med-dose">${med.dose} • ${med.freq}x daily</span>
+        </div>
+        <div class="action-row">
+            <button class="icon-btn edit-btn" onclick="openEditTimes(${med.id})">✎</button>
+            <button class="icon-btn delete-btn" onclick="deleteMed(${med.id})">🗑</button>
+        </div>
+      </div>
+      ${chipsHtml}
+    `;
+    list.appendChild(card);
+  });
+
+  updateDashboard(takenDoses, totalDoses);
+}
+
+function updateDashboard(taken, total) {
+  const circle = document.getElementById('progressRing');
+  const radius = circle.r.baseVal.value;
+  const circumference = radius * 2 * Math.PI;
+  circle.style.strokeDasharray = `${circumference} ${circumference}`;
+  const percent = total === 0 ? 0 : (taken / total);
+  const offset = circumference - (percent * circumference);
+  circle.style.strokeDashoffset = offset;
+  document.getElementById('progressText').innerText = `${Math.round(percent * 100)}%`;
+
+  const title = document.getElementById('progressTitle');
+  const sub = document.getElementById('progressSubtitle');
+  
+  if (total === 0) {
+    title.innerText = "No Meds Yet"; sub.innerText = "Add one below!";
+  } else if (taken === total) {
+    title.innerText = "All Done!"; sub.innerText = "Great job!";
+  } else {
+    title.innerText = "Keep it up!"; sub.innerText = `${total - taken} doses remaining.`;
+  }
+}
+
+/* ---------------- INIT ---------------- */
+function requestNotificationPermission() {
+  if (!("Notification" in window)) return alert("Not supported");
+  Notification.requestPermission();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  checkDailyReset();
+  render();
+  setInterval(() => {
+    checkDailyReset();
+    render();
+  }, 60000);
+});
+
+</script>
+</body>
+</html>
