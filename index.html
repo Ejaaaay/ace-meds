@@ -34,15 +34,25 @@
 
   /* --- HEADER & DASHBOARD --- */
   .header {
-    width: 100%;
-    padding: 20px 25px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
+  width: 100%;
+  padding: 24px 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
   
-  .welcome-text h1 { margin: 0; font-size: 24px; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-  .welcome-text p { margin: 0; font-size: 14px; color: rgba(255,255,255,0.9); }
+ .welcome-text h1 {
+  margin: 0;
+  font-size: 26px;
+  color: #fff;
+  text-shadow: 0 3px 8px rgba(0,0,0,0.25);
+}
+
+.welcome-text p {
+  margin: 2px 0 0 0;
+  font-size: 14px;
+  color: rgba(255,255,255,0.9);
+}
 
   .dashboard {
     background: var(--glass);
@@ -170,16 +180,16 @@
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .ace-avatar {
-  width: 48px;
-  height: 48px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid rgba(255,255,255,0.8);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  border: 3px solid rgba(255,255,255,0.95);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.25);
 }
 .med-card {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -202,6 +212,15 @@
   background: var(--primary);
   border-color: var(--primary-dark);
 }
+
+  .med-progress {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-dark);
+}
+
 
 
 </style>
@@ -527,11 +546,12 @@ function render() {
   let takenDoses = 0;
 
   meds.forEach(med => {
-    // Calculate stats
-    med.schedule.forEach(s => {
-      totalDoses++;
-      if (s.taken) takenDoses++;
-    });
+    const medTotal = med.schedule.length;
+    const medTaken = med.schedule.filter(s => s.taken).length;
+
+    // Add to global dashboard totals
+    totalDoses += medTotal;
+    takenDoses += medTaken;
 
     const card = document.createElement('div');
     card.className = 'med-card';
@@ -552,6 +572,7 @@ function render() {
         <div>
           <div class="med-name">${med.name}</div>
           <span class="med-dose">${med.dose} • ${med.freq}x daily</span>
+          <span class="med-progress">${medTaken} / ${medTotal} doses taken</span>
         </div>
         <div class="action-row">
             <button class="icon-btn edit-btn" onclick="openEditTimes(${med.id})">✎</button>
@@ -605,4 +626,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </script>
 </body>
+
 </html>
